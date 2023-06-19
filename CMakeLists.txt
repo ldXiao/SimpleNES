@@ -74,7 +74,7 @@ endif()
 add_executable(SimpleNES ${SOURCES})
 target_link_libraries(SimpleNES ${SFML_LIBRARIES} ${SFML_DEPENDENCIES})
 
-set_property(TARGET SimpleNES PROPERTY CXX_STANDARD 11)
+set_property(TARGET SimpleNES PROPERTY CXX_STANDARD 17)
 set_property(TARGET SimpleNES PROPERTY CXX_STANDARD_REQUIRED ON)
 
 target_link_libraries(SimpleNES)
