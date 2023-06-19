@@ -1,9 +1,26 @@
 #include "Emulator.h"
 #include "CPUOpcodes.h"
 #include "Log.h"
-
+#include "AudioStream.h"
+#include <memory>
 #include <thread>
 #include <chrono>
+
+#include <math.h>
+
+namespace sound {
+	#define TWOPI 6.283185307
+
+	short SineWave(double time, double freq, double amp) {
+		short result;
+		double tpc = 44100 / freq; // ticks per cycle
+		double cycles = time / tpc;
+		double rad = TWOPI * cycles;
+		short amplitude = 32767 * amp;
+		result = amplitude * sin(rad);
+		return result;
+	}
+}
 
 namespace sn
 {
@@ -72,6 +89,9 @@ namespace sn
 
         sf::Event event;
         bool focus = true, pause = false;
+
+        auto pAudioStream = std::make_unique<sn::AudioStream>();
+        pAudioStream->play();
         while (m_window.isOpen())
         {
             while (m_window.pollEvent(event))
@@ -126,11 +146,13 @@ namespace sn
 
             if (focus && !pause)
             {
+
                 m_elapsedTime += std::chrono::high_resolution_clock::now() - m_cycleTimer;
                 m_cycleTimer = std::chrono::high_resolution_clock::now();
-
+                int x = 0;
                 while (m_elapsedTime > m_cpuCycleDuration)
                 {
+                    x+= 1;
                     //PPU
                     m_ppu.step();
                     m_ppu.step();
@@ -138,15 +160,20 @@ namespace sn
                     //CPU
                     m_cpu.step();
 
+                    pAudioStream->addSample(sound::SineWave(x, 440, 0.9));
+
                     m_elapsedTime -= m_cpuCycleDuration;
                 }
 
                 m_window.draw(m_emulatorScreen);
                 m_window.display();
+                if(pAudioStream->getStatus() != sf::SoundSource::Status::Playing)
+                    pAudioStream->play();
             }
             else
             {
                 sf::sleep(sf::milliseconds(1000/60));
+                pAudioStream->pause();
                 //std::this_thread::sleep_for(std::chrono::milliseconds(1000/60)); //1/60 second
             }
         }
