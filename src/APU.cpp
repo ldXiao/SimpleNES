@@ -3,12 +3,18 @@
 namespace sn
 {
 
-int16_t ChannelPulse0::getValue()
+size_t ChannelPulse0::getValue()
 {
+	return 0;
 
 }
 
 void ChannelPulse0::setStates(MainBus& mem)
+{
+
+}
+
+void ChannelPulse0::init()
 {
 
 }
