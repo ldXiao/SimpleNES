@@ -3,8 +3,10 @@
 #include <SFML/Graphics.hpp>
 #include <chrono>
 
+#include "AudioStream.h"
 #include "CPU.h"
 #include "PPU.h"
+#include "APU.h"
 #include "MainBus.h"
 #include "PictureBus.h"
 #include "Controller.h"
@@ -32,6 +34,7 @@ namespace sn
         PictureBus m_pictureBus;
         CPU m_cpu;
         PPU m_ppu;
+        APU m_apu;
         Cartridge m_cartridge;
         std::unique_ptr<Mapper> m_mapper;
 

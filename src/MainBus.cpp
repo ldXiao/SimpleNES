@@ -83,6 +83,7 @@ namespace sn
                 else
                     LOG(InfoVerbose) << "No write callback registered for I/O register at: " << std::hex << +addr << std::endl;
             }
+            // TODO Lind add apu registers
             else
                 LOG(InfoVerbose) << "Write access attmept at: " << std::hex << +addr << std::endl;
         }

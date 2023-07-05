@@ -11,7 +11,7 @@ AudioStream::AudioStream(size_t channelNum, size_t sampleRate)
 
 AudioStream::~AudioStream()
 {
-
+	m_samples.clear();
 }
 
 bool AudioStream::addSample(std::int16_t sample)

@@ -2,11 +2,11 @@
 #define APU_H
 #include "CPUOpcodes.h"
 #include "MainBus.h"
+#include <cstdint>
 
 namespace sn
 {
 class AudioStream;
-
 // Divider outputs a clock periodically.
 // Note that the term 'period' in this code really means 'period reload value', P,
 // where the actual output clock period is P + 1.
@@ -71,18 +71,18 @@ public:
 		m_halt = halt;
 	}
 
-	void LoadCounterFromLengthTable(uint8 index)
+	void LoadCounterFromLengthTable(std::uint8_t index)
 	{
 		if (!m_enabled)
 			return;
 
-		static uint8 lengthTable[] =
+		static std::vector<std::uint8_t> lengthTable =
 		{
 			10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14,
 			12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30
 		};
-		static_assert(ARRAYSIZE(lengthTable) == 32, "Invalid");
-		assert(index < ARRAYSIZE(lengthTable));
+		// static_assert(lengthTable.size() == 32, "Invalid");
+		assert(index < lengthTable.size());
 
 		m_counter = lengthTable[index];
 	}
@@ -134,7 +134,7 @@ public:
 	void SetLoop(bool loop) { m_loop = loop;  }
 	void SetConstantVolumeMode(bool mode) { m_constantVolumeMode = mode; }
 
-	void SetConstantVolume(uint16 value)
+	void SetConstantVolume(std::uint16_t value)
 	{
 		assert(value < 16);
 		m_constantVolume = value;
@@ -173,7 +173,6 @@ public:
 		}
 	}
 private:
-	friend void DebugDrawAudio(SDL_Renderer* renderer);
 
 	bool m_restart;
 	bool m_loop;
@@ -205,7 +204,7 @@ public:
 		m_divider.SetPeriod(period);
 	}
 
-	void SetPeriodLow8(uint8 value)
+	void SetPeriodLow8(std::uint8_t value)
 	{
 		size_t period = m_divider.GetPeriod();
 		period = (period & 0x700) | value; // Keep high 3 bits, 0x700 == 0b11100000000
@@ -283,7 +282,7 @@ public:
 		ComputeTargetPeriod(timer);
 	}
 
-	void SetShiftCount(uint8 shiftCount)
+	void SetShiftCount(std::uint8_t shiftCount)
 	{
 		assert(shiftCount <= 0b111);
 		m_shiftCount = shiftCount;
@@ -373,7 +372,7 @@ private:
 	bool m_negate;
 	bool m_reload;
 	bool m_silenceChannel; // This is the Sweep -> Gate connection, if true channel is silenced
-	uint8 m_shiftCount; // [0,7]
+	std::uint8_t m_shiftCount; // [0,7]
 	Divider m_divider;
 	size_t m_targetPeriod; // Target period for the timer; is computed continuously in real hardware
 };
@@ -405,7 +404,7 @@ class PulseWaveGenerator
 
 		size_t GetValue() const
 		{
-			static uint8 sequences[4][8] =
+			static std::uint8_t sequences[4][8] =
 			{
 				{ 0, 1, 0, 0, 0, 0, 0, 0 }, // 12.5%
 				{ 0, 1, 1, 0, 0, 0, 0, 0 }, // 25%
@@ -413,13 +412,13 @@ class PulseWaveGenerator
 				{ 1, 0, 0, 1, 1, 1, 1, 1 }  // 25% negated
 			};
 
-			const uint8 value = sequences[m_duty][m_step];
+			const std::uint8_t value = sequences[m_duty][m_step];
 			return value;
 		}
 
 	private:
-		uint8 m_duty; // 2 bits
-		uint8 m_step; // 0-7
+		std::uint8_t m_duty; // 2 bits
+		std::uint8_t m_step; // 0-7
 	};
 
 
@@ -428,7 +427,6 @@ class ChannelBase
 {
 public:
 	virtual size_t getValue()=0;
-	virtual void setStates(const MainBus& mem) =0;
 	virtual void init()=0;
 	virtual void ClockTimer() = 0;
 protected:
@@ -442,7 +440,6 @@ class ChannelPulse0
 {
 	public:
 		size_t getValue() override;
-		void setStates(const MainBus& mem) override;
 		void init() override;
 	private:
 		// registers
@@ -477,19 +474,19 @@ class ChannelDMC
 
 class APU {
 	public:
-		APU(MainBus &mem);
-		void step();
-		void reset();
+		APU();
+		~APU();
+		void handleWrite(sn::IORegisters reg, Byte data);
+		void step(); // tik the clocks of each channel
+		void reset(); // reset each channel
 		float sampleAndMix();
-	private:
-		MainBus &m_bus;
 		std::unique_ptr<AudioStream> m_stream;
+	private:
 		std::unique_ptr<ChannelPulse0> m_channelPulse0;
 		std::unique_ptr<ChannelPulse1> m_channelPulse1;
 		std::unique_ptr<ChannelTriangle> m_channelTriangle;
 		std::unique_ptr<ChannelNoise> m_channelNoise;
 		std::unique_ptr<ChannelDMC> m_channelDMC;
-		std::unique_ptr<AudioStream> m_audioStream;
 
 
 };

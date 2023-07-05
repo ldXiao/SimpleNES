@@ -19,9 +19,19 @@ namespace sn
         PPUSCROL,
         PPUADDR,
         PPUDATA,
+        APUPULSE0_0 = 0x4000,
+        APUPULSE0_1,
+        APUPULSE0_2,
+        APUPULSE0_3,
+        APUPULSE1_0,
+        APUPULSE1_1,
+        APUPULSE1_2,
+        APUPULSE1_3,
+        // TODO Lind add apu registers
         OAMDMA = 0x4014,
+        APUCTRL = 0x4015,
         JOY1 = 0x4016,
-        JOY2 = 0x4017,
+        JOY2 = 0x4017, // The same register is used for apu frame counter (when execute write to this address)
     };
     struct IORegistersHasher
     {

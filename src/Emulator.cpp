@@ -1,7 +1,6 @@
 #include "Emulator.h"
 #include "CPUOpcodes.h"
 #include "Log.h"
-#include "AudioStream.h"
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -27,6 +26,7 @@ namespace sn
     Emulator::Emulator() :
         m_cpu(m_bus),
         m_ppu(m_pictureBus, m_emulatorScreen),
+        m_apu(),
         m_screenScale(3.f),
         m_cycleTimer(),
         m_cpuCycleDuration(std::chrono::nanoseconds(559))
@@ -90,8 +90,6 @@ namespace sn
         sf::Event event;
         bool focus = true, pause = false;
 
-        auto pAudioStream = std::make_unique<sn::AudioStream>();
-        pAudioStream->play();
         while (m_window.isOpen())
         {
             while (m_window.pollEvent(event))
@@ -133,6 +131,10 @@ namespace sn
                         //CPU
                         m_cpu.step();
                     }
+                    if(m_apu.m_stream->getStatus() != AudioStream::Playing)
+                    {
+                        m_apu.m_stream->play();
+                    }
                 }
                 else if (focus && event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::F4)
                 {
@@ -149,10 +151,8 @@ namespace sn
 
                 m_elapsedTime += std::chrono::high_resolution_clock::now() - m_cycleTimer;
                 m_cycleTimer = std::chrono::high_resolution_clock::now();
-                int x = 0;
                 while (m_elapsedTime > m_cpuCycleDuration)
                 {
-                    x+= 1;
                     //PPU
                     m_ppu.step();
                     m_ppu.step();
@@ -160,20 +160,19 @@ namespace sn
                     //CPU
                     m_cpu.step();
 
-                    pAudioStream->addSample(sound::SineWave(x, 440, 0.9));
+                    // APU
+                    m_apu.step();
 
                     m_elapsedTime -= m_cpuCycleDuration;
                 }
 
                 m_window.draw(m_emulatorScreen);
                 m_window.display();
-                if(pAudioStream->getStatus() != sf::SoundSource::Status::Playing)
-                    pAudioStream->play();
+
             }
             else
             {
                 sf::sleep(sf::milliseconds(1000/60));
-                pAudioStream->pause();
                 //std::this_thread::sleep_for(std::chrono::milliseconds(1000/60)); //1/60 second
             }
         }
