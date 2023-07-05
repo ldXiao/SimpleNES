@@ -489,6 +489,10 @@ class APU {
 		std::unique_ptr<ChannelTriangle> m_channelTriangle;
 		std::unique_ptr<ChannelNoise> m_channelNoise;
 		std::unique_ptr<ChannelDMC> m_channelDMC;
+		size_t m_cycles;
+		size_t m_time;
+		size_t m_numSamples;
+		float m_sampleSum;
 
 
 };

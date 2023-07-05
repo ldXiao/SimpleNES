@@ -7,19 +7,7 @@
 
 #include <math.h>
 
-namespace sound {
-	#define TWOPI 6.283185307
 
-	short SineWave(double time, double freq, double amp) {
-		short result;
-		double tpc = 44100 / freq; // ticks per cycle
-		double cycles = time / tpc;
-		double rad = TWOPI * cycles;
-		short amplitude = 32767 * amp;
-		result = amplitude * sin(rad);
-		return result;
-	}
-}
 
 namespace sn
 {
@@ -130,10 +118,8 @@ namespace sn
                         m_ppu.step();
                         //CPU
                         m_cpu.step();
-                    }
-                    if(m_apu.m_stream->getStatus() != AudioStream::Playing)
-                    {
-                        m_apu.m_stream->play();
+                        //APU
+                        m_apu.step();
                     }
                 }
                 else if (focus && event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::F4)
@@ -168,12 +154,17 @@ namespace sn
 
                 m_window.draw(m_emulatorScreen);
                 m_window.display();
+                if(m_apu.m_stream->getStatus() != AudioStream::Playing)
+                {
+                    m_apu.m_stream->play();
+                }
 
             }
             else
             {
                 sf::sleep(sf::milliseconds(1000/60));
-                //std::this_thread::sleep_for(std::chrono::milliseconds(1000/60)); //1/60 second
+                m_apu.m_stream->pause();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000/60)); //1/60 second
             }
         }
     }

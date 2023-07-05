@@ -36,7 +36,6 @@ bool AudioStream::addSample(std::int16_t sample)
 void AudioStream::onSeek(sf::Time timeOffset)
 {
 	const std::lock_guard<std::mutex> lock(mtx);
-	std::cout << "called seek" << m_offset <<  std::endl;
 	m_offset = static_cast<std::size_t>(timeOffset.asMilliseconds()) * getSampleRate() * getChannelCount() / 1000;
 }
 
@@ -45,14 +44,12 @@ bool AudioStream::onGetData(Chunk& data)
 	const std::lock_guard<std::mutex> lock(mtx);
 	// std::cout << "called get" << m_samples.size() <<  std::endl;
 	if(m_offset >= m_samples.size()){
-		std::cout << "failed get" << m_offset <<  std::endl;
 		// return false;
 		return false;
 	}
 	data.samples = &m_samples[m_offset];
 	data.sampleCount = m_samples.size() - m_offset;
 	m_offset += data.sampleCount;
-	std::cout << "ok" << m_offset <<  std::endl;
 	return true;
 
 }
