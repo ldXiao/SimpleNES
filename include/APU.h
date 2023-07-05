@@ -439,8 +439,10 @@ class ChannelPulse0
 	: public ChannelBase
 {
 	public:
+		ChannelPulse0(){};
 		size_t getValue() override;
 		void init() override;
+		void ClockTimer() override;
 	private:
 		// registers
 		Byte r_4000;

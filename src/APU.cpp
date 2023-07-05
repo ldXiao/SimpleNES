@@ -16,6 +16,11 @@ void ChannelPulse0::init()
 
 }
 
+void ChannelPulse0::ClockTimer()
+{
+
+}
+
 
 APU::APU()
 {
