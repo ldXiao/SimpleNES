@@ -73,7 +73,7 @@ namespace sn
                 else
                     LOG(InfoVerbose) << "No write callback registered for I/O register at: " << std::hex << +addr << std::endl;
             }
-            else if (addr < 0x4017 && addr >= 0x4014) //only some registers
+            else if (addr <= 0x4017 && addr >= 0x4000) //only some registers
             {
                 auto it = m_writeCallbacks.find(static_cast<IORegisters>(addr));
                 if (it != m_writeCallbacks.end())
@@ -83,7 +83,7 @@ namespace sn
                 else
                     LOG(InfoVerbose) << "No write callback registered for I/O register at: " << std::hex << +addr << std::endl;
             }
-            // TODO Lind add apu registers
+
             else
                 LOG(InfoVerbose) << "Write access attmept at: " << std::hex << +addr << std::endl;
         }

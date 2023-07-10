@@ -35,6 +35,11 @@ namespace sn
             !m_bus.setWriteCallback(PPUADDR, [&](Byte b) {m_ppu.setDataAddress(b);}) ||
             !m_bus.setWriteCallback(PPUSCROL, [&](Byte b) {m_ppu.setScroll(b);}) ||
             !m_bus.setWriteCallback(PPUDATA, [&](Byte b) {m_ppu.setData(b);}) ||
+            !m_bus.setWriteCallback(APUPULSE0_0, [&](Byte b) {m_apu.handleWrite(APUPULSE0_0, b);})||
+            !m_bus.setWriteCallback(APUPULSE0_1, [&](Byte b) {m_apu.handleWrite(APUPULSE0_1, b);})||
+            !m_bus.setWriteCallback(APUPULSE0_2, [&](Byte b) {m_apu.handleWrite(APUPULSE0_2, b);})||
+            !m_bus.setWriteCallback(APUPULSE0_3, [&](Byte b) {m_apu.handleWrite(APUPULSE0_3, b);})||
+            !m_bus.setWriteCallback(APUCTRL, [&](Byte b) {m_apu.handleWrite(APUCTRL, b);})||
             !m_bus.setWriteCallback(OAMDMA, [&](Byte b) {DMA(b);}) ||
             !m_bus.setWriteCallback(JOY1, [&](Byte b) {m_controller1.strobe(b); m_controller2.strobe(b);}) ||
             !m_bus.setWriteCallback(OAMDATA, [&](Byte b) {m_ppu.setOAMData(b);}))

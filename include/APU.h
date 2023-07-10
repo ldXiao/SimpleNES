@@ -429,27 +429,42 @@ public:
 	virtual size_t getValue()=0;
 	virtual void init()=0;
 	virtual void ClockTimer() = 0;
+	virtual void handleWrite(IORegisters reg, Byte data) = 0;
+	LengthCounter& GetLengthCounter()
+	{
+		return m_lengthCounter;
+	}
 protected:
 	Timer m_timer;
 	LengthCounter m_lengthCounter;
 
 };
 
+class IFrameClockable
+{
+	public:
+	virtual void ClockHalfFrame() = 0;
+	virtual void ClockQuarterFrame() = 0;
+};
+
 class ChannelPulse0
 	: public ChannelBase
+	, public IFrameClockable
 {
 	public:
 		ChannelPulse0(){};
+		// ChannelBase Interfaces
 		size_t getValue() override;
 		void init() override;
 		void ClockTimer() override;
+		void handleWrite(IORegisters reg, Byte data) override;
+		// IFrameClockable Interfaces
+		void ClockHalfFrame() override; // clock sweep unit and length counter
+		void ClockQuarterFrame() override; // clock envelope
 	private:
-		// registers
-		Byte r_4000;
-		Byte r_4001;
-		Byte r_4002;
-		Byte r_4003;
-
+		PulseWaveGenerator m_pulseWaveGenerator;
+		VolumeEnvelope m_volumeEnvelope;
+		SweepUnit m_sweepUnit;
 
 };
 
@@ -474,6 +489,120 @@ class ChannelDMC
 
 };
 
+
+class FrameCounter
+{
+	public:
+		FrameCounter(ChannelPulse0& p0){m_frameClockables.push_back(&p0);};
+		void ClockHalfFrame(){for(auto & p : m_frameClockables){p->ClockHalfFrame();}};
+		void ClockQuarterFrame(){for(auto & p: m_frameClockables){p->ClockQuarterFrame();}};
+
+		void SetMode(uint8_t mode)
+		{
+			assert(mode < 2);
+			if (mode == 0)
+			{
+				m_numSteps = 4;
+			}
+			else
+			{
+				m_numSteps = 5;
+
+				//@TODO: This should happen in 3 or 4 CPU cycles
+				ClockQuarterFrame();
+				ClockHalfFrame();
+			}
+
+			// Always restart sequence
+			//@TODO: This should happen in 3 or 4 CPU cycles
+			m_cpuCycles = 0;
+		}
+		void AllowInterrupt() { m_inhibitInterrupt = false; }
+		void HandleCpuWrite(IORegisters cpuAddress, Byte value)
+		{
+			(void)cpuAddress;
+			assert(cpuAddress == 0x4017);
+
+			SetMode((value & 0b10000000) >> 7);
+
+			if ((value & 0b01000000)!=0)
+				AllowInterrupt(); //@TODO: double-check this
+		}
+		void Clock()
+		{
+			bool resetCycles = false;
+
+			#define APU_TO_CPU_CYCLE(cpuCycle) static_cast<size_t>(cpuCycle * 2)
+
+			switch (m_cpuCycles)
+			{
+			case APU_TO_CPU_CYCLE(3728.5):
+				ClockQuarterFrame();
+				break;
+
+			case APU_TO_CPU_CYCLE(7456.5):
+				ClockQuarterFrame();
+				ClockHalfFrame();
+				break;
+
+			case APU_TO_CPU_CYCLE(11185.5):
+				ClockQuarterFrame();
+				break;
+
+			case APU_TO_CPU_CYCLE(14914):
+				if (m_numSteps == 4)
+				{
+					//@TODO: set interrupt flag if !inhibit
+				}
+				break;
+
+			case APU_TO_CPU_CYCLE(14914.5):
+				if (m_numSteps == 4)
+				{
+					//@TODO: set interrupt flag if !inhibit
+					ClockQuarterFrame();
+					ClockHalfFrame();
+				}
+				break;
+
+			case APU_TO_CPU_CYCLE(14915):
+				if (m_numSteps == 4)
+				{
+					//@TODO: set interrupt flag if !inhibit
+
+					resetCycles = true;
+				}
+				break;
+
+			case APU_TO_CPU_CYCLE(18640.5):
+				assert(m_numSteps == 5);
+				{
+					ClockQuarterFrame();
+					ClockHalfFrame();
+				}
+				break;
+
+			case APU_TO_CPU_CYCLE(18641):
+				assert(m_numSteps == 5);
+				{
+					resetCycles = true;
+				}
+				break;
+			}
+
+			m_cpuCycles = resetCycles ? 0 : m_cpuCycles + 1;
+
+			#undef APU_TO_CPU_CYCLE
+		}
+
+	private:
+		std::vector<IFrameClockable*> m_frameClockables;
+		size_t m_cpuCycles = 0;
+		size_t m_numSteps = 4;
+		bool m_inhibitInterrupt = true;
+};
+
+
 class APU {
 	public:
 		APU();
@@ -489,6 +618,7 @@ class APU {
 		std::unique_ptr<ChannelTriangle> m_channelTriangle;
 		std::unique_ptr<ChannelNoise> m_channelNoise;
 		std::unique_ptr<ChannelDMC> m_channelDMC;
+		std::unique_ptr<FrameCounter> m_frameCounter;
 		size_t m_cycles;
 		size_t m_time;
 		size_t m_numSamples;
